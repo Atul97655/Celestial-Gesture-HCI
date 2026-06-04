@@ -11,8 +11,4 @@ It outlines the concrete, industry-level problems your project solves:
 * Industrial / Heavy Duty Fields: Dirty-hand interaction with interface panels.
 * Museum Installations: Durable public touchless interactive exhibits.
 # Tech Stack
-* WebGL
-* Three.js
-* MediaPipe
-* Web Audio API
-* JavaScript ES6
+`WebGLThree.js` · `MediaPipe` · `Web Audio API` · `JavaScript ES6`
