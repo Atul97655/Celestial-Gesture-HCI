@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8K Cinematic Solar System Particle Orrery</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+<!-- ES Module Shims to support older browsers or strict MIME policies -->
+<script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.8.2/dist/es-module-shims.js"></script>
+
+<!-- Importmap to load modern Three.js and post-processing modules natively -->
+<script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+</script>
+
+<!-- MediaPipe SDK dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+</head>
+<body>
+
+<canvas id="three-canvas"></canvas>
+
+<!-- Onboarding screen -->
+<div id="onboarding">
+  <div class="intro-card">
+    <h1>CELESTIAL ORRERY 8K</h1>
+    <p class="intro-text">
+      A high-fidelity GPU gravitational particle simulation of the Solar System. Control orbits, solar mass ejections, and warp gravitational dimensions using your hands in real time.
+    </p>
+    
+    <div class="gestures-list">
+      <div class="gesture-item">
+        <div class="gesture-title">Planet Attraction</div>
+        <div class="gesture-desc">Move fingertips near orbit rings to create gravitational warps and tidal friction.</div>
+      </div>
+      <div class="gesture-item">
+        <div class="gesture-title">Coronal Ejection</div>
+        <div class="gesture-desc">Spread your fingers wide to release a supernova wave pushing solar winds outward.</div>
+      </div>
+      <div class="gesture-item">
+        <div class="gesture-title">Singularity Collapse</div>
+        <div class="gesture-desc">Clench your hand into a tight fist to trigger a black hole singularity.</div>
+      </div>
+      <div class="gesture-item">
+        <div class="gesture-title">Space Ambient Synth</div>
+        <div class="gesture-desc">Drone sweep filter modulates with hand elevation. Speed triggers pulsar bells.</div>
+      </div>
+    </div>
+    
+    <button class="btn-enter" id="enter-btn">Initialize Celestial Engine</button>
+  </div>
+</div>
+
+<!-- Glassmorphism Controls Dashboard -->
+<div id="dashboard">
+  <div class="dashboard-header" id="dashboard-hdr">
+    <div class="dashboard-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line><line x1="19.07" y1="4.93" x2="14.83" y2="9.17"></line><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line><line x1="9.17" y1="14.83" x2="4.93" y2="19.07"></line></svg>
+      Orrery Core
+    </div>
+    <button class="btn-toggle-ui" id="collapse-btn">✕</button>
+  </div>
+  
+  <div class="dashboard-body">
+    
+    <!-- Simulation Engine Modes -->
+    <div class="setting-group">
+      <label for="simulation-mode">Simulation Mode</label>
+      <select id="simulation-mode">
+        <option value="orrery">Copernican Orrery</option>
+        <option value="storm">Gravitational Gravity Storm</option>
+        <option value="nebula">Spiral Accretion Disk</option>
+      </select>
+    </div>
+    
+    <!-- Cinematic Autopilot -->
+    <div class="setting-group">
+      <div class="switch-row">
+        <label for="autopilot-toggle">Camera Autopilot Tour</label>
+        <label class="switch">
+          <input type="checkbox" id="autopilot-toggle">
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Galaxy View Toggle -->
+    <div class="setting-group">
+      <div class="switch-row">
+        <label for="galaxy-toggle">Milky Way Backdrop</label>
+        <label class="switch">
+          <input type="checkbox" id="galaxy-toggle" checked>
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Cinematic Triggers -->
+    <div class="setting-group" style="gap: 8px;">
+      <label>Cinematic Event Triggers</label>
+      <button id="supernova-btn" style="background: linear-gradient(135deg, #ff4500 0%, #ffa600 100%); border: none; padding: 0.6rem; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(255, 69, 0, 0.25); transition: all 0.3s;">Trigger Supernova</button>
+      <button id="blackhole-btn" style="background: linear-gradient(135deg, #8a2be2 0%, #00e5ff 100%); border: none; padding: 0.6rem; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(138, 43, 226, 0.25); transition: all 0.3s;">Trigger Black Hole</button>
+    </div>
+    
+    <!-- Post-Processing Bloom Exposure Slider -->
+    <div class="setting-group">
+      <div class="switch-row">
+        <label for="bloom-toggle">Cinematic Bloom (Glow)</label>
+        <label class="switch">
+          <input type="checkbox" id="bloom-toggle" checked>
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Bloom Intensity Slider -->
+    <div class="setting-group" id="bloom-intensity-wrapper">
+      <label for="bloom-intensity">Bloom Intensity</label>
+      <div class="slider-wrapper">
+        <input type="range" id="bloom-intensity" min="0.1" max="3.0" step="0.05" value="1.35">
+        <span class="slider-value" id="bloom-val">1.35</span>
+      </div>
+    </div>
+    
+    <!-- Orbit Velocity Speed -->
+    <div class="setting-group">
+      <label for="orbit-speed">Orbital Gravity Constant</label>
+      <div class="slider-wrapper">
+        <input type="range" id="orbit-speed" min="0.1" max="3.0" step="0.1" value="1.0">
+        <span class="slider-value" id="orbit-val">1.0x</span>
+      </div>
+    </div>
+
+    <!-- Hand Gravity Warp Constant -->
+    <div class="setting-group">
+      <label for="hand-gravity">Fingertip Gravity Pull</label>
+      <div class="slider-wrapper">
+        <input type="range" id="hand-gravity" min="0.1" max="5.0" step="0.1" value="1.5">
+        <span class="slider-value" id="gravity-val">1.5x</span>
+      </div>
+    </div>
+
+    <!-- High-Precision Filter Smoothing (EMA) -->
+    <div class="setting-group">
+      <label for="tracking-smooth">Tracking Filter Easing</label>
+      <div class="slider-wrapper">
+        <input type="range" id="tracking-smooth" min="0.02" max="0.5" step="0.01" value="0.15">
+        <span class="slider-value" id="smooth-val">0.15</span>
+      </div>
+    </div>
+    
+    <!-- Generative Audio Synthesis -->
+    <div class="setting-group">
+      <div class="switch-row">
+        <label for="sound-toggle">Pulsar Audio Synthesis</label>
+        <label class="switch">
+          <input type="checkbox" id="sound-toggle" checked>
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Synthesizer Volume -->
+    <div class="setting-group" id="volume-wrapper">
+      <label for="synth-volume">Acoustic Synthesizer Volume</label>
+      <div class="slider-wrapper">
+        <input type="range" id="synth-volume" min="0" max="0.4" step="0.02" value="0.16">
+        <span class="slider-value" id="vol-val">40%</span>
+      </div>
+    </div>
+
+    <!-- PIP camera feed toggle -->
+    <div class="setting-group">
+      <div class="switch-row">
+        <label for="pip-toggle">Viewfinder camera overlay</label>
+        <label class="switch">
+          <input type="checkbox" id="pip-toggle" checked>
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Webcam & Skeletal Tracking Port -->
+<div id="webcam-container">
+  <video id="webcam" autoplay muted playsinline></video>
+  <canvas id="hand-overlay"></canvas>
+  <div class="scanline"></div>
+</div>
+
+<div id="info-banner">Press [H] to hide control console</div>
+
+<!-- Link to application logic module -->
+<script type="module" src="app.js"></script>
+
+</body>
+</html>

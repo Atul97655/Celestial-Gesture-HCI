@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cinematic Hand-Following Heart</title>
+<style>
+  body { margin: 0; overflow: hidden; background: black; }
+  canvas { display: block; }
+  video#webcam {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 180px;
+    opacity: 0.8;
+    z-index: 1;
+    border: 1px solid #fff;
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+</head>
+<body>
+<script>
+/* ---------------- THREE SETUP ---------------- */
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.z = 12;
+
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+/* ---------------- HEART PARTICLES ---------------- */
+const count = 3000;
+const positions = new Float32Array(count*3);
+const velocities = new Float32Array(count*3);
+const basePositions = new Float32Array(count*3);
+
+// Parametric heart function
+function heartShape(t) {
+    const x = 16*Math.pow(Math.sin(t),3);
+    const y = 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
+    return [x/2, y/2];
+}
+
+// Initialize particles in heart shape with random offsets
+for(let i=0;i<count;i++){
+    const t = Math.random()*Math.PI*2;
+    const [hx, hy] = heartShape(t);
+    const offset = 1.5;
+    basePositions[i*3] = hx + (Math.random()-0.5)*offset;
+    basePositions[i*3+1] = hy + (Math.random()-0.5)*offset;
+    basePositions[i*3+2] = (Math.random()-0.5)*offset;
+
+    positions[i*3] = basePositions[i*3];
+    positions[i*3+1] = basePositions[i*3+1];
+    positions[i*3+2] = basePositions[i*3+2];
+
+    velocities[i*3] = (Math.random()-0.5)*0.02;
+    velocities[i*3+1] = (Math.random()-0.5)*0.02;
+    velocities[i*3+2] = (Math.random()-0.5)*0.02;
+}
+
+const geometry = new THREE.BufferGeometry();
+geometry.setAttribute('position', new THREE.BufferAttribute(positions,3));
+
+const material = new THREE.PointsMaterial({
+    color: 0xff69b4,
+    size: 0.08,
+    transparent: true,
+    opacity: 0.9,
+    blending: THREE.AdditiveBlending
+});
+
+const heart = new THREE.Points(geometry, material);
+scene.add(heart);
+
+/* ---------------- VIDEO & HANDS ---------------- */
+const video = document.createElement('video');
+video.id = 'webcam';
+video.autoplay = true;
+video.muted = true;
+document.body.appendChild(video);
+
+const handCanvas = document.createElement('canvas');
+const ctx = handCanvas.getContext('2d');
+handCanvas.style.position = 'fixed';
+handCanvas.style.top = 0;
+handCanvas.style.left = 0;
+handCanvas.style.zIndex = 2;
+document.body.appendChild(handCanvas);
+
+// Fingertip targets
+const fingerTargets = [ {x:0,y:0,z:0}, {x:0,y:0,z:0}, {x:0,y:0,z:0}, {x:0,y:0,z:0}, {x:0,y:0,z:0} ]; // thumb->pinky
+let handRotX=0, handRotY=0, palmSpread=0;
+
+const hands = new Hands({ locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+hands.setOptions({ maxNumHands:1, modelComplexity:1, minDetectionConfidence:0.7, minTrackingConfidence:0.7 });
+
+hands.onResults(results => {
+    ctx.clearRect(0,0,handCanvas.width,handCanvas.height);
+    if(results.multiHandLandmarks?.length){
+        const lm = results.multiHandLandmarks[0];
+        drawConnectors(ctx, lm, HAND_CONNECTIONS, { color: '#00ff99' });
+        drawLandmarks(ctx, lm, { color: '#ff0066' });
+
+        // Map fingertips to 3D space
+        const indices = [4, 8, 12, 16, 20]; // thumb, index, middle, ring, pinky
+        for(let i=0;i<5;i++){
+            const f = lm[indices[i]];
+            fingerTargets[i].x = (f.x-0.5)*20;
+            fingerTargets[i].y = -(f.y-0.5)*20;
+            fingerTargets[i].z = -(f.z)*20;
+        }
+
+        // Hand rotation based on wrist->middle base
+        const wrist = lm[0], middleBase=lm[9];
+        handRotY = (middleBase.x-wrist.x)*Math.PI;
+        handRotX = (middleBase.y-wrist.y)*Math.PI;
+
+        // Palm spread for pulse
+        const d1 = Math.hypot(lm[4].x-lm[8].x,lm[4].y-lm[8].y);
+        const d2 = Math.hypot(lm[4].x-lm[12].x,lm[4].y-lm[12].y);
+        palmSpread = (d1+d2)/2;
+    }
+});
+
+const cam = new Camera(video, { onFrame: async ()=> await hands.send({image: video}), width:640, height:480 });
+cam.start();
+
+/* ---------------- RESIZE ---------------- */
+function resize(){
+    handCanvas.width = window.innerWidth;
+    handCanvas.height = window.innerHeight;
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ---------------- ANIMATE ---------------- */
+function animate(){
+    requestAnimationFrame(animate);
+
+    const posAttr = geometry.attributes.position;
+
+    // Each particle moves slightly toward a random fingertip
+    for(let i=0;i<count;i++){
+        const target = fingerTargets[i%5]; // assign particles to fingertips in round-robin
+        posAttr.array[i*3] += (target.x + basePositions[i*3]*0.3 - posAttr.array[i*3])*0.05 + (Math.random()-0.5)*0.02;
+        posAttr.array[i*3+1] += (target.y + basePositions[i*3+1]*0.3 - posAttr.array[i*3+1])*0.05 + (Math.random()-0.5)*0.02;
+        posAttr.array[i*3+2] += (target.z + basePositions[i*3+2]*0.3 - posAttr.array[i*3+2])*0.05 + (Math.random()-0.5)*0.02;
+    }
+    posAttr.needsUpdate = true;
+
+    // Heart follows average hand center
+    const avgX = fingerTargets.reduce((sum,f)=>sum+f.x,0)/5;
+    const avgY = fingerTargets.reduce((sum,f)=>sum+f.y,0)/5;
+    const avgZ = fingerTargets.reduce((sum,f)=>sum+f.z,0)/5;
+    heart.position.x += (avgX - heart.position.x)*0.1;
+    heart.position.y += (avgY - heart.position.y)*0.1;
+    heart.position.z += (avgZ - heart.position.z)*0.1;
+
+    // Heart rotation
+    heart.rotation.y += (handRotY - heart.rotation.y)*0.05;
+    heart.rotation.x += (handRotX - heart.rotation.x)*0.05;
+
+    // Pulse effect
+    const pulse = 1 + palmSpread*1.5;
+    heart.scale.set(pulse, pulse, pulse);
+
+    renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
