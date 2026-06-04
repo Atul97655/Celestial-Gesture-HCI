@@ -6,9 +6,13 @@ It explains the Exponential Moving Average (EMA) algorithm (α=0.06) used to fil
 It showcases your parametric heart test (3,000 particles mapped using Cartesian heart equations) as a proof-of-concept benchmark used to calibrate fingertips, palm spread, and wrist rotation vectors before scaling to the 60,000-particle system.
 # Real-World Applications
 It outlines the concrete, industry-level problems your project solves:
-     1. terile Medical Interfaces: Touchless navigation of 3D MRI scans in surgery.
-     2. Interactive EdTech: Kinesthetic learning of astrophysics and orbital mechanics.
-     3. Industrial / Heavy Duty Fields: Dirty-hand interaction with interface panels.
-     4. Museum Installations: Durable public touchless interactive exhibits.
+* terile Medical Interfaces: Touchless navigation of 3D MRI scans in surgery.
+* Interactive EdTech: Kinesthetic learning of astrophysics and orbital mechanics.
+* Industrial / Heavy Duty Fields: Dirty-hand interaction with interface panels.
+* Museum Installations: Durable public touchless interactive exhibits.
 # Tech Stack
-WebGL, Three.js, MediaPipe, Web Audio API and JavaScript ES6
+* WebGL
+* Three.js
+* MediaPipe
+* Web Audio API
+* JavaScript ES6
