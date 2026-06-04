@@ -1,4 +1,4 @@
-# Celestial-Gesture-HCI
+# Celestial Gesture HCI
 A real-time, gesture-controlled 3D Solar System Orrery utilizing computer vision (MediaPipe Hands) and WebGL (Three.js) for touchless spatial interaction.
 ## Technical Depth
 It explains the Exponential Moving Average (EMA) algorithm (α=0.06) used to filter out raw camera noise and prevent tracking jitter, and the Keplerian orbit interpolation math used to slide the planets between their orbits and the sun during your hand gestures.
